@@ -1,0 +1,22 @@
+{
+  "name": "Livestock Manager",
+  "short_name": "Livestock",
+  "description": "Track your herd, health, and finances",
+  "start_url": "./livestock-pwa.html",
+  "display": "standalone",
+  "background_color": "#f5f5f7",
+  "theme_color": "#00bcd4",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect fill='%2300bcd4' width='200' height='200'/%3E%3Ctext x='100' y='130' text-anchor='middle' font-size='120' fill='white'%3E🐐%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%2300bcd4' width='512' height='512'/%3E%3Ctext x='256' y='350' text-anchor='middle' font-size='320' fill='white'%3E🐐%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
