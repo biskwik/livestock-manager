@@ -2,7 +2,7 @@
   "name": "Livestock Manager",
   "short_name": "Livestock",
   "description": "Track your herd, health, and finances",
-  "start_url": "./",
+  "start_url": "./livestock-pwa.html",
   "display": "standalone",
   "background_color": "#f5f5f7",
   "theme_color": "#00bcd4",

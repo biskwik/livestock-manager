@@ -12,7 +12,12 @@
     <meta name="theme-color" content="#00bcd4">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect fill='%2300bcd4' width='200' height='200'/%3E%3Ctext x='100' y='130' text-anchor='middle' font-size='120' fill='white'%3E🐐%3C/text%3E%3C/svg%3E">
     
+    <!-- FullCalendar CSS -->
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- FullCalendar JS -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
     <style>
         * {
             margin: 0;
@@ -342,11 +347,13 @@
             background: rgba(0,0,0,0.5);
             z-index: 1000;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 20px 0;
         }
 
         .modal.active {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
         }
 
@@ -356,12 +363,19 @@
             padding: 25px;
             max-width: 500px;
             width: 90%;
-            max-height: 90vh;
+            max-height: 85vh;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: auto;
         }
 
         .modal-header {
             margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 1;
+            padding-bottom: 10px;
         }
 
         .modal-header h2 {
@@ -417,6 +431,7 @@
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #eee;
+            white-space: nowrap;
         }
 
         table th {
@@ -427,6 +442,13 @@
 
         table tr:hover {
             background: #f9f9f9;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 0 -20px;
+            padding: 0 20px;
         }
 
         .action-btn {
@@ -475,6 +497,52 @@
             color: #c62828;
         }
 
+        #calendar {
+            max-width: 100%;
+            margin: 20px 0;
+        }
+
+        .fc {
+            font-size: 14px;
+        }
+
+        .fc-event {
+            cursor: pointer;
+        }
+
+        .fc-event-completed {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        .calendar-view-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .view-btn {
+            padding: 8px 16px;
+            border: 1px solid #00bcd4;
+            background: white;
+            color: #00bcd4;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .view-btn.active {
+            background: #00bcd4;
+            color: white;
+        }
+
+        .view-btn:hover {
+            background: #00bcd4;
+            color: white;
+        }
+
         @media (max-width: 768px) {
             .stats-grid {
                 grid-template-columns: 1fr;
@@ -486,6 +554,81 @@
 
             .goat-list {
                 grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                width: 95%;
+                padding: 20px 15px;
+                max-height: 90vh;
+            }
+
+            .modal-header h2 {
+                font-size: 18px;
+            }
+
+            .form-group label {
+                font-size: 13px;
+            }
+
+            .form-group input,
+            .form-group select,
+            .form-group textarea {
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+
+            .table-wrapper {
+                margin: 0 -15px;
+                padding: 0 15px;
+                position: relative;
+            }
+
+            .table-wrapper::after {
+                content: '→';
+                position: absolute;
+                right: 0;
+                top: 50%;
+                transform: translateY(-50%);
+                background: linear-gradient(to left, white 20%, transparent);
+                padding: 10px 15px;
+                pointer-events: none;
+                font-size: 20px;
+                color: #00bcd4;
+            }
+
+            table {
+                font-size: 12px;
+                min-width: 100%;
+            }
+
+            table th,
+            table td {
+                padding: 8px 6px;
+                font-size: 11px;
+            }
+
+            .action-btn {
+                padding: 4px 8px;
+                font-size: 10px;
+                margin-right: 3px;
+                margin-bottom: 3px;
+                white-space: nowrap;
+            }
+
+            .container {
+                padding: 15px;
+            }
+
+            .nav-tabs {
+                padding: 3px;
+            }
+
+            .nav-tab {
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+
+            .card {
+                padding: 15px;
             }
         }
     </style>
@@ -562,10 +705,22 @@
         <div id="schedule" class="tab-content">
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h2>Upcoming Tasks</h2>
+                    <h2>Schedule & Calendar</h2>
                     <button class="btn btn-primary" onclick="openAddTaskModal()">+ Add Task</button>
                 </div>
-                <div id="scheduleList"></div>
+                
+                <div class="calendar-view-toggle">
+                    <button class="view-btn active" onclick="toggleScheduleView('calendar')">📅 Calendar View</button>
+                    <button class="view-btn" onclick="toggleScheduleView('list')">📋 List View</button>
+                </div>
+
+                <div id="calendarView" style="display: block;">
+                    <div id="calendar"></div>
+                </div>
+
+                <div id="listView" style="display: none;">
+                    <div id="scheduleList"></div>
+                </div>
             </div>
         </div>
 
@@ -667,6 +822,25 @@
                         <option value="purchased">Purchased</option>
                     </select>
                 </div>
+                <div id="bornFields" style="display: block;">
+                    <div class="form-group">
+                        <label>Dam (Mother)</label>
+                        <select id="goatDam">
+                            <option value="">Select dam...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Sire (Father)</label>
+                        <select id="goatSire">
+                            <option value="">Select sire...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Sire Name (if external)</label>
+                        <input type="text" id="goatSireName" placeholder="e.g., Back in Black">
+                        <small style="color: #666; font-size: 12px;">Use this if sire is not in your herd</small>
+                    </div>
+                </div>
                 <div id="purchaseFields" style="display: none;">
                     <div class="form-group">
                         <label>Purchased From</label>
@@ -736,36 +910,273 @@
     </div>
 
     <div id="addBreedingModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 600px;">
             <div class="modal-header">
                 <h2>Add Breeding Record</h2>
             </div>
             <form id="addBreedingForm">
                 <div class="form-group">
-                    <label>Dam (Mother) *</label>
+                    <label>Doe (Recipient) *</label>
                     <select id="breedingDam" required></select>
                 </div>
+                
                 <div class="form-group">
-                    <label>Sire (Father) *</label>
-                    <select id="breedingSire" required></select>
+                    <label>Breeding Type *</label>
+                    <select id="breedingType" required onchange="toggleBreedingFields()">
+                        <option value="">Select...</option>
+                        <option value="natural_internal">Natural - Internal Buck</option>
+                        <option value="natural_external">Natural - External Buck</option>
+                        <option value="ai">Artificial Insemination (AI)</option>
+                        <option value="embryo">Embryo Recipient</option>
+                    </select>
                 </div>
+
+                <!-- Internal Buck Field -->
+                <div id="internalBuckField" style="display: none;">
+                    <div class="form-group">
+                        <label>Buck (Sire) *</label>
+                        <select id="breedingSire"></select>
+                    </div>
+                </div>
+
+                <!-- External Buck Field -->
+                <div id="externalBuckField" style="display: none;">
+                    <div class="form-group">
+                        <label>External Buck Name *</label>
+                        <input type="text" id="externalBuckName" placeholder="e.g., Back in Black">
+                    </div>
+                    <div class="form-group">
+                        <label>Buck Owner/Location</label>
+                        <input type="text" id="externalBuckLocation" placeholder="e.g., Smith Farm, John's Ranch">
+                    </div>
+                </div>
+
+                <!-- AI Field -->
+                <div id="aiField" style="display: none;">
+                    <div class="form-group">
+                        <label>Semen Source *</label>
+                        <input type="text" id="semenSource" placeholder="e.g., Buck name/ID">
+                    </div>
+                    <div class="form-group">
+                        <label>AI Performed By/Location</label>
+                        <input type="text" id="aiLocation" placeholder="e.g., Vet clinic, technician name">
+                    </div>
+                </div>
+
+                <!-- Embryo Fields -->
+                <div id="embryoFields" style="display: none;">
+                    <div class="form-group">
+                        <label>Biological Dam *</label>
+                        <select id="biologicalDam">
+                            <option value="">Select biological dam...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Biological Sire *</label>
+                        <select id="biologicalSire">
+                            <option value="">Select biological sire...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Embryo Source/Notes</label>
+                        <input type="text" id="embryoSource" placeholder="e.g., Clinic name, donor info">
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label>Breeding Date *</label>
-                    <input type="date" id="breedingDate" required>
+                    <input type="date" id="breedingDate" required onchange="calculateDueDate()">
                 </div>
+                
                 <div class="form-group">
-                    <label>Expected Due Date</label>
-                    <input type="date" id="breedingDueDate">
+                    <label>Expected Kidding Date (auto-calculated at 150 days)</label>
+                    <input type="date" id="breedingDueDate" readonly style="background: #f5f5f5;">
                 </div>
+
                 <div class="form-group">
-                    <label>Notes</label>
-                    <textarea id="breedingNotes"></textarea>
+                    <label>Ultrasound Date</label>
+                    <input type="date" id="ultrasoundDate">
                 </div>
+
+                <div class="form-group">
+                    <label>Ultrasound Result</label>
+                    <select id="ultrasoundResult">
+                        <option value="">Not done yet</option>
+                        <option value="open">Open (not pregnant)</option>
+                        <option value="1">1 kid</option>
+                        <option value="2">2 kids</option>
+                        <option value="3">3 kids</option>
+                        <option value="4">4+ kids</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Actual Kidding Date</label>
+                    <input type="date" id="actualKiddingDate">
+                </div>
+
+                <div class="form-group">
+                    <label>Number of Kids Born</label>
+                    <input type="number" id="numberOfKids" min="0" max="10">
+                </div>
+
+                <div class="form-group">
+                    <label>Health Issues/Notes</label>
+                    <textarea id="healthIssuesNotes" placeholder="Any complications, stillbirths, retained placenta, etc."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>General Notes</label>
+                    <textarea id="breedingNotes" placeholder="Additional notes about this breeding"></textarea>
+                </div>
+                
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Add Breeding</button>
                     <button type="button" class="btn btn-secondary" onclick="closeModal('addBreedingModal')">Cancel</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div id="editBreedingModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>Edit Breeding Record</h2>
+            </div>
+            <form id="editBreedingForm">
+                <input type="hidden" id="editBreedingId">
+                
+                <div class="form-group">
+                    <label>Doe (Recipient) *</label>
+                    <select id="editBreedingDam" required></select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Breeding Type *</label>
+                    <select id="editBreedingType" required onchange="toggleEditBreedingFields()">
+                        <option value="">Select...</option>
+                        <option value="natural_internal">Natural - Internal Buck</option>
+                        <option value="natural_external">Natural - External Buck</option>
+                        <option value="ai">Artificial Insemination (AI)</option>
+                        <option value="embryo">Embryo Recipient</option>
+                    </select>
+                </div>
+
+                <!-- Internal Buck Field -->
+                <div id="editInternalBuckField" style="display: none;">
+                    <div class="form-group">
+                        <label>Buck (Sire) *</label>
+                        <select id="editBreedingSire"></select>
+                    </div>
+                </div>
+
+                <!-- External Buck Field -->
+                <div id="editExternalBuckField" style="display: none;">
+                    <div class="form-group">
+                        <label>External Buck Name *</label>
+                        <input type="text" id="editExternalBuckName">
+                    </div>
+                    <div class="form-group">
+                        <label>Buck Owner/Location</label>
+                        <input type="text" id="editExternalBuckLocation" placeholder="e.g., Smith Farm, John's Ranch">
+                    </div>
+                </div>
+
+                <!-- AI Field -->
+                <div id="editAiField" style="display: none;">
+                    <div class="form-group">
+                        <label>Semen Source *</label>
+                        <input type="text" id="editSemenSource">
+                    </div>
+                    <div class="form-group">
+                        <label>AI Performed By/Location</label>
+                        <input type="text" id="editAiLocation" placeholder="e.g., Vet clinic, technician name">
+                    </div>
+                </div>
+
+                <!-- Embryo Fields -->
+                <div id="editEmbryoFields" style="display: none;">
+                    <div class="form-group">
+                        <label>Biological Dam *</label>
+                        <select id="editBiologicalDam">
+                            <option value="">Select biological dam...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Biological Sire *</label>
+                        <select id="editBiologicalSire">
+                            <option value="">Select biological sire...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Embryo Source/Notes</label>
+                        <input type="text" id="editEmbryoSource">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Breeding Date *</label>
+                    <input type="date" id="editBreedingDate" required onchange="calculateEditDueDate()">
+                </div>
+                
+                <div class="form-group">
+                    <label>Expected Kidding Date (auto-calculated at 150 days)</label>
+                    <input type="date" id="editBreedingDueDate" readonly style="background: #f5f5f5;">
+                </div>
+
+                <div class="form-group">
+                    <label>Ultrasound Date</label>
+                    <input type="date" id="editUltrasoundDate">
+                </div>
+
+                <div class="form-group">
+                    <label>Ultrasound Result</label>
+                    <select id="editUltrasoundResult">
+                        <option value="">Not done yet</option>
+                        <option value="open">Open (not pregnant)</option>
+                        <option value="1">1 kid</option>
+                        <option value="2">2 kids</option>
+                        <option value="3">3 kids</option>
+                        <option value="4">4+ kids</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Actual Kidding Date</label>
+                    <input type="date" id="editActualKiddingDate">
+                </div>
+
+                <div class="form-group">
+                    <label>Number of Kids Born</label>
+                    <input type="number" id="editNumberOfKids" min="0" max="10">
+                </div>
+
+                <div class="form-group">
+                    <label>Health Issues/Notes</label>
+                    <textarea id="editHealthIssuesNotes"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>General Notes</label>
+                    <textarea id="editBreedingNotes"></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editBreedingModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="addKidsModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Add Kids from Breeding</h2>
+            </div>
+            <div id="addKidsContent">
+                <!-- Content will be populated dynamically -->
+            </div>
         </div>
     </div>
 
@@ -790,6 +1201,7 @@
                         <option value="hoof-trim">Hoof Trim</option>
                         <option value="checkup">Checkup</option>
                         <option value="breeding">Breeding</option>
+                        <option value="medication">Medication</option>
                         <option value="other">Other</option>
                     </select>
                 </div>
@@ -801,6 +1213,49 @@
                     <label>Description *</label>
                     <textarea id="taskDescription" required></textarea>
                 </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="taskRecurring" onchange="toggleRecurringFields()">
+                        Make this a recurring task
+                    </label>
+                </div>
+
+                <div id="recurringFields" style="display: none;">
+                    <div class="form-group">
+                        <label>Repeat Every *</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="taskRecurInterval" min="1" value="1" style="width: 80px;">
+                            <select id="taskRecurFrequency">
+                                <option value="days">Days</option>
+                                <option value="weeks">Weeks</option>
+                                <option value="months">Months</option>
+                                <option value="years">Years</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>End Recurrence</label>
+                        <select id="taskRecurEnd" onchange="toggleRecurEndDate()">
+                            <option value="never">Never</option>
+                            <option value="after">After number of occurrences</option>
+                            <option value="on">On specific date</option>
+                        </select>
+                    </div>
+                    <div id="recurAfterField" style="display: none;">
+                        <div class="form-group">
+                            <label>Number of Occurrences</label>
+                            <input type="number" id="taskRecurCount" min="1" value="10">
+                        </div>
+                    </div>
+                    <div id="recurOnField" style="display: none;">
+                        <div class="form-group">
+                            <label>End Date</label>
+                            <input type="date" id="taskRecurEndDate">
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Add Task</button>
                     <button type="button" class="btn btn-secondary" onclick="closeModal('addTaskModal')">Cancel</button>
@@ -986,7 +1441,14 @@
             if (tabName === 'herd') renderHerd();
             if (tabName === 'health') renderHealthRecords();
             if (tabName === 'breeding') renderBreedingHistory();
-            if (tabName === 'schedule') renderSchedule();
+            if (tabName === 'schedule') {
+                renderSchedule();
+                if (!window.calendar) {
+                    initializeCalendar();
+                } else {
+                    renderCalendar();
+                }
+            }
             if (tabName === 'financial') renderFinancial();
         }
 
@@ -1034,6 +1496,8 @@
             const acquisition = document.getElementById('goatAcquisition').value;
             document.getElementById('purchaseFields').style.display = 
                 acquisition === 'purchased' ? 'block' : 'none';
+            document.getElementById('bornFields').style.display = 
+                acquisition === 'born' ? 'block' : 'none';
         }
 
         function toggleIncomeGoatFields() {
@@ -1052,6 +1516,22 @@
         function openAddGoatModal() {
             document.getElementById('addGoatForm').reset();
             document.getElementById('purchaseFields').style.display = 'none';
+            document.getElementById('bornFields').style.display = 'block';
+            
+            // Populate dam dropdown
+            const damSelect = document.getElementById('goatDam');
+            damSelect.innerHTML = '<option value="">Select dam...</option>';
+            goats.filter(g => g.sex === 'female' || g.sex === 'doe_kid').forEach(goat => {
+                damSelect.innerHTML += `<option value="${goat.id}">${goat.name}</option>`;
+            });
+            
+            // Populate sire dropdown
+            const sireSelect = document.getElementById('goatSire');
+            sireSelect.innerHTML = '<option value="">Select sire...</option>';
+            goats.filter(g => g.sex === 'male' || g.sex === 'buck_kid').forEach(goat => {
+                sireSelect.innerHTML += `<option value="${goat.id}">${goat.name}</option>`;
+            });
+            
             openModal('addGoatModal');
         }
 
@@ -1068,6 +1548,12 @@
                 acquisitionType: document.getElementById('goatAcquisition').value,
                 notes: document.getElementById('goatNotes').value
             };
+
+            if (goat.acquisitionType === 'born') {
+                goat.dam = document.getElementById('goatDam').value || null;
+                goat.sire = document.getElementById('goatSire').value || null;
+                goat.sireName = document.getElementById('goatSireName').value || null;
+            }
 
             if (goat.acquisitionType === 'purchased') {
                 goat.purchasedFrom = document.getElementById('goatPurchasedFrom').value;
@@ -1140,39 +1626,340 @@
         function openAddBreedingModal() {
             const damSelect = document.getElementById('breedingDam');
             const sireSelect = document.getElementById('breedingSire');
+            const biologicalDamSelect = document.getElementById('biologicalDam');
+            const biologicalSireSelect = document.getElementById('biologicalSire');
             
-            damSelect.innerHTML = '<option value="">Select dam...</option>';
-            sireSelect.innerHTML = '<option value="">Select sire...</option>';
+            damSelect.innerHTML = '<option value="">Select doe...</option>';
+            sireSelect.innerHTML = '<option value="">Select buck...</option>';
+            biologicalDamSelect.innerHTML = '<option value="">Select biological dam...</option>';
+            biologicalSireSelect.innerHTML = '<option value="">Select biological sire...</option>';
             
-            goats.filter(g => g.sex === 'female').forEach(goat => {
+            // Populate does
+            goats.filter(g => g.sex === 'female' || g.sex === 'doe_kid').forEach(goat => {
                 damSelect.innerHTML += `<option value="${goat.id}">${goat.name}</option>`;
+                biologicalDamSelect.innerHTML += `<option value="${goat.id}">${goat.name}</option>`;
             });
             
-            goats.filter(g => g.sex === 'male').forEach(goat => {
+            // Populate bucks
+            goats.filter(g => g.sex === 'male' || g.sex === 'buck_kid').forEach(goat => {
                 sireSelect.innerHTML += `<option value="${goat.id}">${goat.name}</option>`;
+                biologicalSireSelect.innerHTML += `<option value="${goat.id}">${goat.name}</option>`;
             });
             
             document.getElementById('addBreedingForm').reset();
+            toggleBreedingFields(); // Reset field visibility
             openModal('addBreedingModal');
+        }
+
+        // Toggle breeding fields based on type
+        function toggleBreedingFields() {
+            const breedingType = document.getElementById('breedingType').value;
+            
+            // Hide all conditional fields
+            document.getElementById('internalBuckField').style.display = 'none';
+            document.getElementById('externalBuckField').style.display = 'none';
+            document.getElementById('aiField').style.display = 'none';
+            document.getElementById('embryoFields').style.display = 'none';
+            
+            // Show relevant fields based on type
+            if (breedingType === 'natural_internal') {
+                document.getElementById('internalBuckField').style.display = 'block';
+                document.getElementById('breedingSire').required = true;
+            } else if (breedingType === 'natural_external') {
+                document.getElementById('externalBuckField').style.display = 'block';
+                document.getElementById('externalBuckName').required = true;
+            } else if (breedingType === 'ai') {
+                document.getElementById('aiField').style.display = 'block';
+                document.getElementById('semenSource').required = true;
+            } else if (breedingType === 'embryo') {
+                document.getElementById('embryoFields').style.display = 'block';
+            }
+        }
+
+        // Auto-calculate due date (150 days from breeding)
+        function calculateDueDate() {
+            const breedingDate = document.getElementById('breedingDate').value;
+            if (breedingDate) {
+                const date = new Date(breedingDate);
+                date.setDate(date.getDate() + 150);
+                document.getElementById('breedingDueDate').value = date.toISOString().split('T')[0];
+            }
         }
 
         document.getElementById('addBreedingForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
+            const breedingType = document.getElementById('breedingType').value;
+            
             const record = {
                 id: generateId(),
                 damId: document.getElementById('breedingDam').value,
-                sireId: document.getElementById('breedingSire').value,
+                breedingType: breedingType,
                 breedingDate: document.getElementById('breedingDate').value,
-                dueDate: document.getElementById('breedingDueDate').value,
+                expectedKidding: document.getElementById('breedingDueDate').value,
+                ultrasoundDate: document.getElementById('ultrasoundDate').value,
+                ultrasoundResult: document.getElementById('ultrasoundResult').value,
+                actualKidding: document.getElementById('actualKiddingDate').value,
+                numberOfKids: document.getElementById('numberOfKids').value,
+                healthIssuesNotes: document.getElementById('healthIssuesNotes').value,
                 notes: document.getElementById('breedingNotes').value
             };
+
+            // Add type-specific fields
+            if (breedingType === 'natural_internal') {
+                record.sireId = document.getElementById('breedingSire').value;
+            } else if (breedingType === 'natural_external') {
+                record.externalBuckName = document.getElementById('externalBuckName').value;
+                record.externalBuckLocation = document.getElementById('externalBuckLocation').value;
+            } else if (breedingType === 'ai') {
+                record.semenSource = document.getElementById('semenSource').value;
+                record.aiLocation = document.getElementById('aiLocation').value;
+            } else if (breedingType === 'embryo') {
+                record.biologicalDamId = document.getElementById('biologicalDam').value;
+                record.biologicalSireId = document.getElementById('biologicalSire').value;
+                record.embryoSource = document.getElementById('embryoSource').value;
+            }
 
             breedingRecords.push(record);
             saveData();
             renderBreedingHistory();
             closeModal('addBreedingModal');
         });
+
+        // Edit Breeding
+        function openEditBreedingModal(breedingId) {
+            const breeding = breedingRecords.find(b => b.id === breedingId);
+            if (!breeding) return;
+
+            // Populate selects
+            const damSelect = document.getElementById('editBreedingDam');
+            const sireSelect = document.getElementById('editBreedingSire');
+            const biologicalDamSelect = document.getElementById('editBiologicalDam');
+            const biologicalSireSelect = document.getElementById('editBiologicalSire');
+            
+            damSelect.innerHTML = '<option value="">Select doe...</option>';
+            sireSelect.innerHTML = '<option value="">Select buck...</option>';
+            biologicalDamSelect.innerHTML = '<option value="">Select biological dam...</option>';
+            biologicalSireSelect.innerHTML = '<option value="">Select biological sire...</option>';
+            
+            goats.filter(g => g.sex === 'female' || g.sex === 'doe_kid').forEach(goat => {
+                damSelect.innerHTML += `<option value="${goat.id}">${goat.name}</option>`;
+                biologicalDamSelect.innerHTML += `<option value="${goat.id}">${goat.name}</option>`;
+            });
+            
+            goats.filter(g => g.sex === 'male' || g.sex === 'buck_kid').forEach(goat => {
+                sireSelect.innerHTML += `<option value="${goat.id}">${goat.name}</option>`;
+                biologicalSireSelect.innerHTML += `<option value="${goat.id}">${goat.name}</option>`;
+            });
+
+            // Populate form with existing data
+            document.getElementById('editBreedingId').value = breeding.id;
+            document.getElementById('editBreedingDam').value = breeding.damId || '';
+            document.getElementById('editBreedingType').value = breeding.breedingType || 'natural_internal';
+            document.getElementById('editBreedingDate').value = breeding.breedingDate || '';
+            document.getElementById('editBreedingDueDate').value = breeding.expectedKidding || breeding.dueDate || '';
+            document.getElementById('editUltrasoundDate').value = breeding.ultrasoundDate || '';
+            document.getElementById('editUltrasoundResult').value = breeding.ultrasoundResult || '';
+            document.getElementById('editActualKiddingDate').value = breeding.actualKidding || '';
+            document.getElementById('editNumberOfKids').value = breeding.numberOfKids || '';
+            document.getElementById('editHealthIssuesNotes').value = breeding.healthIssuesNotes || '';
+            document.getElementById('editBreedingNotes').value = breeding.notes || '';
+
+            // Type-specific fields
+            if (breeding.breedingType === 'natural_internal') {
+                document.getElementById('editBreedingSire').value = breeding.sireId || '';
+            } else if (breeding.breedingType === 'natural_external') {
+                document.getElementById('editExternalBuckName').value = breeding.externalBuckName || '';
+                document.getElementById('editExternalBuckLocation').value = breeding.externalBuckLocation || '';
+            } else if (breeding.breedingType === 'ai') {
+                document.getElementById('editSemenSource').value = breeding.semenSource || '';
+                document.getElementById('editAiLocation').value = breeding.aiLocation || '';
+            } else if (breeding.breedingType === 'embryo') {
+                document.getElementById('editBiologicalDam').value = breeding.biologicalDamId || '';
+                document.getElementById('editBiologicalSire').value = breeding.biologicalSireId || '';
+                document.getElementById('editEmbryoSource').value = breeding.embryoSource || '';
+            }
+
+            toggleEditBreedingFields();
+            openModal('editBreedingModal');
+        }
+
+        function toggleEditBreedingFields() {
+            const breedingType = document.getElementById('editBreedingType').value;
+            
+            document.getElementById('editInternalBuckField').style.display = 'none';
+            document.getElementById('editExternalBuckField').style.display = 'none';
+            document.getElementById('editAiField').style.display = 'none';
+            document.getElementById('editEmbryoFields').style.display = 'none';
+            
+            if (breedingType === 'natural_internal') {
+                document.getElementById('editInternalBuckField').style.display = 'block';
+            } else if (breedingType === 'natural_external') {
+                document.getElementById('editExternalBuckField').style.display = 'block';
+            } else if (breedingType === 'ai') {
+                document.getElementById('editAiField').style.display = 'block';
+            } else if (breedingType === 'embryo') {
+                document.getElementById('editEmbryoFields').style.display = 'block';
+            }
+        }
+
+        function calculateEditDueDate() {
+            const breedingDate = document.getElementById('editBreedingDate').value;
+            if (breedingDate) {
+                const date = new Date(breedingDate);
+                date.setDate(date.getDate() + 150);
+                document.getElementById('editBreedingDueDate').value = date.toISOString().split('T')[0];
+            }
+        }
+
+        document.getElementById('editBreedingForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const breedingId = document.getElementById('editBreedingId').value;
+            const breeding = breedingRecords.find(b => b.id === breedingId);
+            if (!breeding) return;
+
+            const breedingType = document.getElementById('editBreedingType').value;
+
+            // Update all fields
+            breeding.damId = document.getElementById('editBreedingDam').value;
+            breeding.breedingType = breedingType;
+            breeding.breedingDate = document.getElementById('editBreedingDate').value;
+            breeding.expectedKidding = document.getElementById('editBreedingDueDate').value;
+            breeding.ultrasoundDate = document.getElementById('editUltrasoundDate').value;
+            breeding.ultrasoundResult = document.getElementById('editUltrasoundResult').value;
+            breeding.actualKidding = document.getElementById('editActualKiddingDate').value;
+            breeding.numberOfKids = document.getElementById('editNumberOfKids').value;
+            breeding.healthIssuesNotes = document.getElementById('editHealthIssuesNotes').value;
+            breeding.notes = document.getElementById('editBreedingNotes').value;
+
+            // Clear type-specific fields
+            delete breeding.sireId;
+            delete breeding.externalBuckName;
+            delete breeding.externalBuckLocation;
+            delete breeding.semenSource;
+            delete breeding.aiLocation;
+            delete breeding.biologicalDamId;
+            delete breeding.biologicalSireId;
+            delete breeding.embryoSource;
+
+            // Set type-specific fields
+            if (breedingType === 'natural_internal') {
+                breeding.sireId = document.getElementById('editBreedingSire').value;
+            } else if (breedingType === 'natural_external') {
+                breeding.externalBuckName = document.getElementById('editExternalBuckName').value;
+                breeding.externalBuckLocation = document.getElementById('editExternalBuckLocation').value;
+            } else if (breedingType === 'ai') {
+                breeding.semenSource = document.getElementById('editSemenSource').value;
+                breeding.aiLocation = document.getElementById('editAiLocation').value;
+            } else if (breedingType === 'embryo') {
+                breeding.biologicalDamId = document.getElementById('editBiologicalDam').value;
+                breeding.biologicalSireId = document.getElementById('editBiologicalSire').value;
+                breeding.embryoSource = document.getElementById('editEmbryoSource').value;
+            }
+
+            saveData();
+            renderBreedingHistory();
+            closeModal('editBreedingModal');
+        });
+
+        // Add Kids from Breeding
+        function openAddKidsModal(breedingId) {
+            const breeding = breedingRecords.find(b => b.id === breedingId);
+            if (!breeding) return;
+
+            const dam = goats.find(g => g.id === breeding.damId);
+            const numberOfKids = parseInt(breeding.numberOfKids) || 0;
+
+            let sireId = null;
+            let sireName = null;
+
+            // Determine sire based on breeding type
+            if (breeding.breedingType === 'natural_internal') {
+                sireId = breeding.sireId;
+            } else if (breeding.breedingType === 'natural_external') {
+                sireName = breeding.externalBuckName;
+            } else if (breeding.breedingType === 'embryo') {
+                sireId = breeding.biologicalSireId;
+            }
+
+            let html = `
+                <p style="margin-bottom: 20px;">
+                    <strong>Dam:</strong> ${dam ? dam.name : 'Unknown'}<br>
+                    <strong>Kidding Date:</strong> ${formatDate(breeding.actualKidding)}<br>
+                    <strong>Number of Kids:</strong> ${numberOfKids}
+                </p>
+                <form id="addKidsToHerdForm">
+            `;
+
+            for (let i = 1; i <= numberOfKids; i++) {
+                html += `
+                    <div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px;">
+                        <h3 style="margin-bottom: 10px; color: #00bcd4;">Kid #${i}</h3>
+                        <div class="form-group">
+                            <label>Name *</label>
+                            <input type="text" id="kidName${i}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Sex *</label>
+                            <select id="kidSex${i}" required>
+                                <option value="">Select...</option>
+                                <option value="doe_kid">Doe Kid</option>
+                                <option value="buck_kid">Buck Kid</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Tag/ID</label>
+                            <input type="text" id="kidTag${i}">
+                        </div>
+                        <div class="form-group">
+                            <label>Notes</label>
+                            <textarea id="kidNotes${i}" placeholder="e.g., color, markings, nursing behavior"></textarea>
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Add All Kids to Herd</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('addKidsModal')">Cancel</button>
+                    </div>
+                </form>
+            `;
+
+            document.getElementById('addKidsContent').innerHTML = html;
+
+            document.getElementById('addKidsToHerdForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                for (let i = 1; i <= numberOfKids; i++) {
+                    const kid = {
+                        id: generateId(),
+                        name: document.getElementById(`kidName${i}`).value,
+                        sex: document.getElementById(`kidSex${i}`).value,
+                        tag: document.getElementById(`kidTag${i}`).value || '',
+                        birthDate: breeding.actualKidding,
+                        acquisitionType: 'born',
+                        dam: breeding.damId,
+                        sire: sireId,
+                        sireName: sireName,
+                        breed: dam ? dam.breed : '',
+                        notes: document.getElementById(`kidNotes${i}`).value || ''
+                    };
+
+                    goats.push(kid);
+                }
+
+                saveData();
+                renderHerd();
+                renderOverview();
+                closeModal('addKidsModal');
+                alert(`✓ Successfully added ${numberOfKids} kid${numberOfKids > 1 ? 's' : ''} to the herd!`);
+            });
+
+            openModal('addKidsModal');
+        }
 
         // Add Task
         function openAddTaskModal() {
@@ -1182,6 +1969,9 @@
                 select.innerHTML += `<option value="${goat.id}">${goat.name}</option>`;
             });
             document.getElementById('addTaskForm').reset();
+            document.getElementById('recurringFields').style.display = 'none';
+            document.getElementById('recurAfterField').style.display = 'none';
+            document.getElementById('recurOnField').style.display = 'none';
             openModal('addTaskModal');
         }
 
@@ -1197,9 +1987,26 @@
                 completed: false
             };
 
+            // Add recurring fields if enabled
+            if (document.getElementById('taskRecurring').checked) {
+                task.recurring = true;
+                task.recurInterval = parseInt(document.getElementById('taskRecurInterval').value) || 1;
+                task.recurFrequency = document.getElementById('taskRecurFrequency').value;
+                
+                const endType = document.getElementById('taskRecurEnd').value;
+                if (endType === 'after') {
+                    task.recurCount = parseInt(document.getElementById('taskRecurCount').value);
+                } else if (endType === 'on') {
+                    task.recurEndDate = document.getElementById('taskRecurEndDate').value;
+                }
+            }
+
             scheduleTasks.push(task);
             saveData();
             renderSchedule();
+            if (window.calendar) {
+                renderCalendar();
+            }
             closeModal('addTaskModal');
         });
 
@@ -1478,7 +2285,7 @@
 
             const sorted = [...healthRecords].sort((a, b) => b.date.localeCompare(a.date));
 
-            let html = '<table><thead><tr><th>Date</th><th>Goat</th><th>Type</th><th>Description</th></tr></thead><tbody>';
+            let html = '<div class="table-wrapper"><table><thead><tr><th>Date</th><th>Goat</th><th>Type</th><th>Description</th></tr></thead><tbody>';
             
             sorted.forEach(record => {
                 const goat = goats.find(g => g.id === record.goatId);
@@ -1492,7 +2299,7 @@
                 `;
             });
 
-            html += '</tbody></table>';
+            html += '</tbody></table></div>';
             document.getElementById('healthRecordsList').innerHTML = html;
         }
 
@@ -1506,23 +2313,73 @@
 
             const sorted = [...breedingRecords].sort((a, b) => b.breedingDate.localeCompare(a.breedingDate));
 
-            let html = '<table><thead><tr><th>Date</th><th>Dam</th><th>Sire</th><th>Due Date</th><th>Notes</th></tr></thead><tbody>';
+            let html = '<div class="table-wrapper"><table><thead><tr><th>Date</th><th>Doe</th><th>Type</th><th>Sire/Source</th><th>Expected</th><th>Actual</th><th>Result</th><th>Notes</th><th>Actions</th></tr></thead><tbody>';
             
             sorted.forEach(record => {
                 const dam = goats.find(g => g.id === record.damId);
-                const sire = goats.find(g => g.id === record.sireId);
+                
+                // Determine sire/source display based on breeding type
+                let sireDisplay = '';
+                if (record.breedingType === 'natural_internal') {
+                    const sire = goats.find(g => g.id === record.sireId);
+                    sireDisplay = sire ? sire.name : 'Unknown';
+                } else if (record.breedingType === 'natural_external') {
+                    sireDisplay = record.externalBuckName || 'External';
+                } else if (record.breedingType === 'ai') {
+                    sireDisplay = record.semenSource || 'AI';
+                } else if (record.breedingType === 'embryo') {
+                    const bioDam = goats.find(g => g.id === record.biologicalDamId);
+                    const bioSire = goats.find(g => g.id === record.biologicalSireId);
+                    sireDisplay = `ET: ${bioDam ? bioDam.name : '?'} x ${bioSire ? bioSire.name : '?'}`;
+                } else {
+                    // Legacy records without type
+                    const sire = goats.find(g => g.id === record.sireId);
+                    sireDisplay = sire ? sire.name : 'Unknown';
+                }
+
+                // Breeding type display
+                const typeLabels = {
+                    'natural_internal': 'Natural (Internal)',
+                    'natural_external': 'Natural (External)',
+                    'ai': 'AI',
+                    'embryo': 'Embryo'
+                };
+                const typeDisplay = typeLabels[record.breedingType] || 'Natural';
+
+                // Result display
+                let resultDisplay = '-';
+                if (record.actualKidding) {
+                    resultDisplay = record.numberOfKids ? `${record.numberOfKids} kid(s)` : 'Kidded';
+                } else if (record.ultrasoundResult) {
+                    if (record.ultrasoundResult === 'open') {
+                        resultDisplay = '❌ Open';
+                    } else {
+                        resultDisplay = `${record.ultrasoundResult} (US)`;
+                    }
+                }
+
+                // Action buttons
+                let actions = `<button class="btn btn-primary action-btn" onclick="openEditBreedingModal('${record.id}')">Edit</button>`;
+                if (record.actualKidding && record.numberOfKids > 0) {
+                    actions += ` <button class="btn btn-secondary action-btn" onclick="openAddKidsModal('${record.id}')">Add Kids</button>`;
+                }
+
                 html += `
                     <tr>
                         <td>${formatDate(record.breedingDate)}</td>
                         <td>${dam ? dam.name : 'Unknown'}</td>
-                        <td>${sire ? sire.name : 'Unknown'}</td>
-                        <td>${record.dueDate ? formatDate(record.dueDate) : '-'}</td>
-                        <td>${record.notes || '-'}</td>
+                        <td>${typeDisplay}</td>
+                        <td>${sireDisplay}</td>
+                        <td>${record.expectedKidding || record.dueDate ? formatDate(record.expectedKidding || record.dueDate) : '-'}</td>
+                        <td>${record.actualKidding ? formatDate(record.actualKidding) : '-'}</td>
+                        <td>${resultDisplay}</td>
+                        <td>${record.notes || record.healthIssuesNotes || '-'}</td>
+                        <td>${actions}</td>
                     </tr>
                 `;
             });
 
-            html += '</tbody></table>';
+            html += '</tbody></table></div>';
             document.getElementById('breedingList').innerHTML = html;
         }
 
@@ -1537,7 +2394,7 @@
                 return;
             }
 
-            let html = '<table><thead><tr><th>Due Date</th><th>Goat</th><th>Type</th><th>Description</th><th>Actions</th></tr></thead><tbody>';
+            let html = '<div class="table-wrapper"><table><thead><tr><th>Due Date</th><th>Goat</th><th>Type</th><th>Description</th><th>Actions</th></tr></thead><tbody>';
             
             upcoming.forEach(task => {
                 const goat = task.goatId ? goats.find(g => g.id === task.goatId) : null;
@@ -1557,7 +2414,7 @@
                 `;
             });
 
-            html += '</tbody></table>';
+            html += '</tbody></table></div>';
             document.getElementById('scheduleList').innerHTML = html;
         }
 
@@ -1565,8 +2422,276 @@
             const task = scheduleTasks.find(t => t.id === taskId);
             if (task) {
                 task.completed = true;
+                task.completedDate = new Date().toISOString().split('T')[0];
                 saveData();
                 renderSchedule();
+                if (window.calendar) {
+                    renderCalendar();
+                }
+            }
+        }
+
+        // Toggle recurring fields in task modal
+        function toggleRecurringFields() {
+            const isRecurring = document.getElementById('taskRecurring').checked;
+            document.getElementById('recurringFields').style.display = isRecurring ? 'block' : 'none';
+        }
+
+        function toggleRecurEndDate() {
+            const endType = document.getElementById('taskRecurEnd').value;
+            document.getElementById('recurAfterField').style.display = endType === 'after' ? 'block' : 'none';
+            document.getElementById('recurOnField').style.display = endType === 'on' ? 'block' : 'none';
+        }
+
+        // Toggle between calendar and list view
+        function toggleScheduleView(view) {
+            const calendarView = document.getElementById('calendarView');
+            const listView = document.getElementById('listView');
+            const buttons = document.querySelectorAll('.view-btn');
+
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            if (view === 'calendar') {
+                calendarView.style.display = 'block';
+                listView.style.display = 'none';
+                buttons[0].classList.add('active');
+                if (window.calendar) {
+                    window.calendar.render();
+                } else {
+                    initializeCalendar();
+                }
+            } else {
+                calendarView.style.display = 'none';
+                listView.style.display = 'block';
+                buttons[1].classList.add('active');
+            }
+        }
+
+        // Initialize Calendar
+        function initializeCalendar() {
+            const calendarEl = document.getElementById('calendar');
+            
+            window.calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,dayGridWeek,listMonth'
+                },
+                events: getCalendarEvents(),
+                eventClick: function(info) {
+                    handleEventClick(info.event);
+                },
+                height: 'auto'
+            });
+
+            window.calendar.render();
+        }
+
+        // Get all events for calendar
+        function getCalendarEvents() {
+            const events = [];
+
+            // Add scheduled tasks
+            scheduleTasks.forEach(task => {
+                const goat = task.goatId ? goats.find(g => g.id === task.goatId) : null;
+                const isCompleted = task.completed;
+                
+                events.push({
+                    id: `task-${task.id}`,
+                    title: `${task.type.replace('-', ' ').toUpperCase()}: ${task.description}`,
+                    start: task.dueDate,
+                    backgroundColor: isCompleted ? '#9e9e9e' : getTaskColor(task.type),
+                    borderColor: isCompleted ? '#757575' : getTaskColor(task.type),
+                    extendedProps: {
+                        type: 'task',
+                        taskId: task.id,
+                        goatName: goat ? goat.name : 'All Goats',
+                        completed: isCompleted
+                    },
+                    classNames: isCompleted ? ['fc-event-completed'] : []
+                });
+
+                // If recurring, add future occurrences
+                if (task.recurring && !isCompleted) {
+                    const futureOccurrences = generateRecurringOccurrences(task, 6); // Next 6 months
+                    futureOccurrences.forEach((date, idx) => {
+                        events.push({
+                            id: `task-${task.id}-recur-${idx}`,
+                            title: `${task.type.replace('-', ' ').toUpperCase()}: ${task.description} (Recurring)`,
+                            start: date,
+                            backgroundColor: getTaskColor(task.type),
+                            borderColor: getTaskColor(task.type),
+                            extendedProps: {
+                                type: 'recurring-task',
+                                taskId: task.id,
+                                goatName: goat ? goat.name : 'All Goats',
+                                completed: false
+                            }
+                        });
+                    });
+                }
+            });
+
+            // Add breeding dates
+            breedingRecords.forEach(breeding => {
+                const dam = goats.find(g => g.id === breeding.damId);
+                
+                // Breeding date
+                events.push({
+                    id: `breeding-${breeding.id}`,
+                    title: `🐐 Bred: ${dam ? dam.name : 'Unknown'}`,
+                    start: breeding.breedingDate,
+                    backgroundColor: '#9c27b0',
+                    borderColor: '#7b1fa2',
+                    extendedProps: {
+                        type: 'breeding',
+                        breedingId: breeding.id
+                    }
+                });
+
+                // Expected kidding date
+                if (breeding.expectedKidding && !breeding.actualKidding) {
+                    events.push({
+                        id: `kidding-expected-${breeding.id}`,
+                        title: `📅 Expected Kidding: ${dam ? dam.name : 'Unknown'}`,
+                        start: breeding.expectedKidding,
+                        backgroundColor: '#ff9800',
+                        borderColor: '#f57c00',
+                        extendedProps: {
+                            type: 'expected-kidding',
+                            breedingId: breeding.id
+                        }
+                    });
+                }
+
+                // Actual kidding date
+                if (breeding.actualKidding) {
+                    events.push({
+                        id: `kidding-actual-${breeding.id}`,
+                        title: `🎉 Kidded: ${dam ? dam.name : 'Unknown'} (${breeding.numberOfKids || '?'} kids)`,
+                        start: breeding.actualKidding,
+                        backgroundColor: '#4caf50',
+                        borderColor: '#388e3c',
+                        extendedProps: {
+                            type: 'actual-kidding',
+                            breedingId: breeding.id
+                        }
+                    });
+                }
+
+                // Ultrasound date
+                if (breeding.ultrasoundDate) {
+                    events.push({
+                        id: `ultrasound-${breeding.id}`,
+                        title: `🔍 Ultrasound: ${dam ? dam.name : 'Unknown'}`,
+                        start: breeding.ultrasoundDate,
+                        backgroundColor: '#00bcd4',
+                        borderColor: '#0097a7',
+                        extendedProps: {
+                            type: 'ultrasound',
+                            breedingId: breeding.id
+                        }
+                    });
+                }
+            });
+
+            return events;
+        }
+
+        // Get color for task type
+        function getTaskColor(type) {
+            const colors = {
+                'vaccination': '#2196f3',
+                'deworming': '#ff5722',
+                'hoof-trim': '#795548',
+                'checkup': '#00bcd4',
+                'breeding': '#9c27b0',
+                'medication': '#e91e63',
+                'other': '#607d8b'
+            };
+            return colors[type] || '#607d8b';
+        }
+
+        // Generate recurring task occurrences
+        function generateRecurringOccurrences(task, monthsAhead = 6) {
+            if (!task.recurring) return [];
+            
+            const occurrences = [];
+            const startDate = new Date(task.dueDate);
+            const endDate = new Date();
+            endDate.setMonth(endDate.getMonth() + monthsAhead);
+
+            let currentDate = new Date(startDate);
+            const interval = task.recurInterval || 1;
+            const frequency = task.recurFrequency || 'weeks';
+
+            // Skip the first occurrence (it's already in the main task)
+            addToDate(currentDate, interval, frequency);
+
+            let count = 1;
+            const maxCount = task.recurCount || 999;
+            const recurEndDate = task.recurEndDate ? new Date(task.recurEndDate) : null;
+
+            while (currentDate <= endDate && count < maxCount) {
+                if (recurEndDate && currentDate > recurEndDate) break;
+                
+                occurrences.push(currentDate.toISOString().split('T')[0]);
+                addToDate(currentDate, interval, frequency);
+                count++;
+            }
+
+            return occurrences;
+        }
+
+        function addToDate(date, interval, frequency) {
+            switch (frequency) {
+                case 'days':
+                    date.setDate(date.getDate() + interval);
+                    break;
+                case 'weeks':
+                    date.setDate(date.getDate() + (interval * 7));
+                    break;
+                case 'months':
+                    date.setMonth(date.getMonth() + interval);
+                    break;
+                case 'years':
+                    date.setFullYear(date.getFullYear() + interval);
+                    break;
+            }
+        }
+
+        // Handle calendar event click
+        function handleEventClick(event) {
+            const props = event.extendedProps;
+            
+            if (props.type === 'task' || props.type === 'recurring-task') {
+                const task = scheduleTasks.find(t => t.id === props.taskId);
+                if (task) {
+                    const msg = `${task.type.replace('-', ' ').toUpperCase()}
+                    
+Goat: ${props.goatName}
+Due Date: ${formatDate(task.dueDate)}
+Description: ${task.description}
+Status: ${props.completed ? 'Completed ✓' : 'Pending'}`;
+
+                    if (confirm(msg + '\n\nMark as complete?') && !props.completed) {
+                        completeTask(task.id);
+                    }
+                }
+            } else if (props.type === 'breeding' || props.type === 'expected-kidding' || props.type === 'actual-kidding' || props.type === 'ultrasound') {
+                const breeding = breedingRecords.find(b => b.id === props.breedingId);
+                if (breeding) {
+                    openEditBreedingModal(breeding.id);
+                }
+            }
+        }
+
+        // Render calendar
+        function renderCalendar() {
+            if (window.calendar) {
+                window.calendar.removeAllEvents();
+                window.calendar.addEventSource(getCalendarEvents());
             }
         }
 
@@ -1875,6 +3000,8 @@
                         acquisitionType: row['Acquisition Type'] || 'born',
                         dam: row['Dam ID'] || null,
                         sire: row['Sire ID'] || null,
+                        sireName: row['Sire Name'] || null,
+                        damName: row['Dam Name'] || null,
                         purchasePrice: row['Purchase Price'] || 0,
                         purchaseDate: row['Purchase Date'] ? excelDateToISO(row['Purchase Date']) : '',
                         purchasedFrom: row['Purchased From'] || '',
@@ -1919,10 +3046,23 @@
                     importedBreeding = rows.map(row => ({
                         id: row['ID'] || generateId(),
                         damId: row['Doe ID'] || '',
+                        breedingType: row['Breeding Type'] || 'natural_internal',
                         sireId: row['Buck ID'] || '',
+                        externalBuckName: row['External Buck Name'] || '',
+                        semenSource: row['Semen Source'] || '',
+                        biologicalDamId: row['Biological Dam ID'] || '',
+                        biologicalSireId: row['Biological Sire ID'] || '',
+                        embryoSource: row['Embryo Source'] || '',
                         breedingDate: row['Breeding Date'] ? excelDateToISO(row['Breeding Date']) : '',
-                        dueDate: row['Expected Kidding'] ? excelDateToISO(row['Expected Kidding']) : '',
-                        notes: row['General Notes'] || ''
+                        expectedKidding: row['Expected Kidding'] ? excelDateToISO(row['Expected Kidding']) : '',
+                        ultrasoundDate: row['Ultrasound Date'] ? excelDateToISO(row['Ultrasound Date']) : '',
+                        ultrasoundResult: row['Ultrasound Result'] || '',
+                        actualKidding: row['Actual Kidding'] ? excelDateToISO(row['Actual Kidding']) : '',
+                        numberOfKids: row['Number of Kids'] || '',
+                        healthIssuesNotes: row['Health Issues Notes'] || '',
+                        notes: row['General Notes'] || '',
+                        // Support legacy 'dueDate' field
+                        dueDate: row['Expected Kidding'] ? excelDateToISO(row['Expected Kidding']) : ''
                     })).filter(b => b.damId && b.breedingDate);
                 }
 
