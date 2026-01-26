@@ -3384,10 +3384,36 @@
             try {
                 // Create data array for Excel
                 const data = [
-                    ['Goat Name', 'Birth Date', 'Sex', 'Purchase Date', 'Purchased From', 'Sire', 'Dam', 'Bottle Baby', 'Wether']
+                    [
+                        'Goat Name', 'Birth Date', 'Sex', 'Purchase Date', 'Purchased From', 
+                        'Sire', 'Dam', 'Bottle Baby', 'Wether', 'Notes',
+                        'Bred Date', 'Buck Name', 'Breeding Type', 'Due Date', 
+                        'Ultrasound Date', 'Ultrasound Result', 'Kids Added'
+                    ]
                 ];
                 
                 activeGoats.forEach(goat => {
+                    // Get breeding info if exists
+                    let breedingInfo = {
+                        bredDate: '',
+                        buckName: '',
+                        breedingType: '',
+                        dueDate: '',
+                        ultrasoundDate: '',
+                        ultrasoundResult: '',
+                        kidsAdded: ''
+                    };
+                    
+                    if (goat.breeding) {
+                        breedingInfo.bredDate = goat.breeding.date || '';
+                        breedingInfo.buckName = goat.breeding.buckName || '';
+                        breedingInfo.breedingType = goat.breeding.type || '';
+                        breedingInfo.dueDate = goat.breeding.dueDate || '';
+                        breedingInfo.ultrasoundDate = goat.breeding.ultrasoundDate || '';
+                        breedingInfo.ultrasoundResult = goat.breeding.ultrasoundResult || '';
+                        breedingInfo.kidsAdded = goat.breeding.kidsAddedToHerd ? 'Yes' : 'No';
+                    }
+                    
                     data.push([
                         goat.name || '',
                         goat.birthDate || '',
@@ -3397,7 +3423,15 @@
                         goat.sire || '',
                         goat.dam || '',
                         goat.isBottleBaby ? 'Yes' : 'No',
-                        goat.isWether ? 'Yes' : 'No'
+                        goat.isWether ? 'Yes' : 'No',
+                        goat.notes || '',
+                        breedingInfo.bredDate,
+                        breedingInfo.buckName,
+                        breedingInfo.breedingType,
+                        breedingInfo.dueDate,
+                        breedingInfo.ultrasoundDate,
+                        breedingInfo.ultrasoundResult,
+                        breedingInfo.kidsAdded
                     ]);
                 });
                 
@@ -3412,8 +3446,23 @@
                 
                 // Set column widths
                 ws['!cols'] = [
-                    {wch: 20}, {wch: 12}, {wch: 8}, {wch: 12}, {wch: 20},
-                    {wch: 15}, {wch: 15}, {wch: 12}, {wch: 10}
+                    {wch: 20}, // Goat Name
+                    {wch: 12}, // Birth Date
+                    {wch: 8},  // Sex
+                    {wch: 12}, // Purchase Date
+                    {wch: 20}, // Purchased From
+                    {wch: 15}, // Sire
+                    {wch: 15}, // Dam
+                    {wch: 12}, // Bottle Baby
+                    {wch: 10}, // Wether
+                    {wch: 30}, // Notes
+                    {wch: 12}, // Bred Date
+                    {wch: 15}, // Buck Name
+                    {wch: 20}, // Breeding Type
+                    {wch: 12}, // Due Date
+                    {wch: 15}, // Ultrasound Date
+                    {wch: 18}, // Ultrasound Result
+                    {wch: 12}  // Kids Added
                 ];
                 console.log('7. Column widths set');
                 
@@ -3521,8 +3570,24 @@
                             dam: row[6] || '',
                             isBottleBaby: String(row[7] || '').toLowerCase() === 'yes',
                             isWether: String(row[8] || '').toLowerCase() === 'yes',
+                            notes: row[9] || '',
                             removed: false
                         };
+                        
+                        // Import breeding data if present
+                        if (row[10] || row[11] || row[12] || row[13]) {
+                            goat.breeding = {
+                                id: generateId(),
+                                date: row[10] || '',
+                                buckName: row[11] || '',
+                                type: row[12] || '',
+                                dueDate: row[13] || '',
+                                ultrasoundDate: row[14] || '',
+                                ultrasoundResult: row[15] || '',
+                                kidsAddedToHerd: String(row[16] || '').toLowerCase() === 'yes'
+                            };
+                        }
+                        
                         importedGoats.push(goat);
                     }
                     
