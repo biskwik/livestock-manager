@@ -3387,31 +3387,45 @@
                     [
                         'Goat Name', 'Birth Date', 'Sex', 'Purchase Date', 'Purchased From', 
                         'Sire', 'Dam', 'Bottle Baby', 'Wether', 'Notes',
-                        'Bred Date', 'Buck Name', 'Breeding Type', 'Due Date', 
+                        'Bred Date', 'Breeding Type', 'Buck/Source', 'Due Date', 
                         'Ultrasound Date', 'Ultrasound Result', 'Kids Added'
                     ]
                 ];
                 
                 activeGoats.forEach(goat => {
-                    // Get breeding info if exists
+                    // Get breeding info from breedings array if doe
                     let breedingInfo = {
                         bredDate: '',
-                        buckName: '',
                         breedingType: '',
+                        buckSource: '',
                         dueDate: '',
                         ultrasoundDate: '',
                         ultrasoundResult: '',
                         kidsAdded: ''
                     };
                     
-                    if (goat.breeding) {
-                        breedingInfo.bredDate = goat.breeding.date || '';
-                        breedingInfo.buckName = goat.breeding.buckName || '';
-                        breedingInfo.breedingType = goat.breeding.type || '';
-                        breedingInfo.dueDate = goat.breeding.dueDate || '';
-                        breedingInfo.ultrasoundDate = goat.breeding.ultrasoundDate || '';
-                        breedingInfo.ultrasoundResult = goat.breeding.ultrasoundResult || '';
-                        breedingInfo.kidsAdded = goat.breeding.kidsAddedToHerd ? 'Yes' : 'No';
+                    if (goat.sex === 'female') {
+                        const breeding = breedings.find(b => b.doeId === goat.id && !b.kidsAddedToHerd);
+                        if (breeding) {
+                            breedingInfo.bredDate = breeding.date || '';
+                            breedingInfo.breedingType = breeding.type || '';
+                            breedingInfo.dueDate = breeding.dueDate || '';
+                            breedingInfo.ultrasoundDate = breeding.ultrasoundDate || '';
+                            breedingInfo.ultrasoundResult = breeding.ultrasoundResult || '';
+                            breedingInfo.kidsAdded = breeding.kidsAddedToHerd ? 'Yes' : 'No';
+                            
+                            // Get buck/source name based on type
+                            if (breeding.type === 'herd') {
+                                const buck = goats.find(g => g.id === breeding.buckId);
+                                breedingInfo.buckSource = buck ? buck.name : '';
+                            } else if (breeding.type === 'external') {
+                                breedingInfo.buckSource = breeding.externalBuckName || '';
+                            } else if (breeding.type === 'ai') {
+                                breedingInfo.buckSource = breeding.aiSource || '';
+                            } else if (breeding.type === 'embryo') {
+                                breedingInfo.buckSource = breeding.embryoSource || '';
+                            }
+                        }
                     }
                     
                     data.push([
@@ -3426,8 +3440,8 @@
                         goat.isWether ? 'Yes' : 'No',
                         goat.notes || '',
                         breedingInfo.bredDate,
-                        breedingInfo.buckName,
                         breedingInfo.breedingType,
+                        breedingInfo.buckSource,
                         breedingInfo.dueDate,
                         breedingInfo.ultrasoundDate,
                         breedingInfo.ultrasoundResult,
@@ -3554,12 +3568,15 @@
                     
                     // Parse rows (skip header)
                     let importedGoats = [];
+                    let importedBreedings = [];
+                    
                     for (let i = 1; i < rows.length; i++) {
                         const row = rows[i];
                         if (!row || row.length === 0) continue;
                         
+                        const goatId = generateId();
                         const goat = {
-                            id: generateId(),
+                            id: goatId,
                             name: row[0] || 'Unnamed',
                             birthDate: row[1] || '',
                             sex: String(row[2] || '').toLowerCase().includes('buck') ? 'male' : 'female',
@@ -3574,18 +3591,32 @@
                             removed: false
                         };
                         
-                        // Import breeding data if present
-                        if (row[10] || row[11] || row[12] || row[13]) {
-                            goat.breeding = {
+                        // Import breeding data if present and goat is female
+                        if (goat.sex === 'female' && row[10]) {
+                            const breedingType = String(row[11] || '').toLowerCase();
+                            const breeding = {
                                 id: generateId(),
+                                doeId: goatId,
+                                type: breedingType,
                                 date: row[10] || '',
-                                buckName: row[11] || '',
-                                type: row[12] || '',
                                 dueDate: row[13] || '',
                                 ultrasoundDate: row[14] || '',
                                 ultrasoundResult: row[15] || '',
                                 kidsAddedToHerd: String(row[16] || '').toLowerCase() === 'yes'
                             };
+                            
+                            // Add buck/source info based on type
+                            if (breedingType === 'external') {
+                                breeding.externalBuckName = row[12] || '';
+                            } else if (breedingType === 'ai') {
+                                breeding.aiSource = row[12] || '';
+                            } else if (breedingType === 'embryo') {
+                                breeding.embryoSource = row[12] || '';
+                            }
+                            // Note: For 'herd' type, we'd need to match buck name to ID, 
+                            // which we'll skip for now as we don't have buck IDs yet
+                            
+                            importedBreedings.push(breeding);
                         }
                         
                         importedGoats.push(goat);
@@ -3597,13 +3628,14 @@
                     }
                     
                     // Ask for confirmation
-                    if (confirm(`Import ${importedGoats.length} goat(s)? This will ADD them to your existing herd.`)) {
+                    if (confirm(`Import ${importedGoats.length} goat(s) and ${importedBreedings.length} breeding record(s)? This will ADD them to your existing herd.`)) {
                         goats.push(...importedGoats);
+                        breedings.push(...importedBreedings);
                         saveData();
                         updateAutomaticGroups();
                         updateOverview();
                         renderHerd();
-                        alert(`✓ Successfully imported ${importedGoats.length} goat(s)!`);
+                        alert(`✓ Successfully imported ${importedGoats.length} goat(s) and ${importedBreedings.length} breeding record(s)!`);
                     }
                     
                 } catch (err) {
